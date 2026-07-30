@@ -1,7 +1,7 @@
 """FinGraph Sentinel — GenAI Graph Engineering Agent for BFSI.
 
 Loads the system prompt, invokes an LLM (Ollama or OpenAI-compatible via env),
-and enforces the 4-section response structure. Falls back to a deterministic
+and enforces the 8-section response structure. Falls back to a deterministic
 rule-based solver when no LLM is configured, so CI/tests work without GPU/API.
 """
 
@@ -19,16 +19,18 @@ PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "system_prompt.m
 
 @dataclass
 class SentinelSolution:
-    """A fully-parsed FinGraph Sentinel solution with all four sections."""
+    """A fully-parsed FinGraph Sentinel solution with all eight sections."""
 
     domain: str
     problem: str
     decomposition: str
     graph_schema: str  # Cypher DDL
     algorithms: str
-    kpis: str
-
-    raw: str = field(repr=False)  # raw LLM output
+    gen_ai_integration: str = ""
+    architecture: str = ""
+    roadmap: str = ""
+    kpis_and_risk: str = ""
+    raw: str = field(default="", repr=False)  # raw LLM output
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -36,8 +38,11 @@ class SentinelSolution:
             "problem": self.problem,
             "problem_decomposition": self.decomposition,
             "knowledge_graph_schema": self.graph_schema,
-            "algorithms_and_methodology": self.algorithms,
-            "kpis_measurement_compliance": self.kpis,
+            "graph_algorithm_selection": self.algorithms,
+            "gen_ai_integration": self.gen_ai_integration,
+            "architecture_diagram": self.architecture,
+            "implementation_roadmap": self.roadmap,
+            "success_metrics_and_risk": self.kpis_and_risk,
         }
 
 
@@ -60,8 +65,11 @@ def _load_kb() -> dict[str, SentinelSolution]:
             problem=data.get("problem", ""),
             decomposition=data.get("problem_decomposition", ""),
             graph_schema=data.get("knowledge_graph_schema", ""),
-            algorithms=data.get("algorithms_and_methodology", ""),
-            kpis=data.get("kpis_measurement_compliance", ""),
+            algorithms=data.get("graph_algorithm_selection", data.get("algorithms_and_methodology", "")),
+            gen_ai_integration=data.get("gen_ai_integration", ""),
+            architecture=data.get("architecture_diagram", ""),
+            roadmap=data.get("implementation_roadmap", ""),
+            kpis_and_risk=data.get("success_metrics_and_risk", data.get("kpis_measurement_compliance", "")),
             raw=json.dumps(data, indent=2),
         )
     return _BFSI_KB
@@ -104,7 +112,7 @@ CREATE CONSTRAINT IF NOT EXISTS FOR (t:Transaction) REQUIRE t.id IS UNIQUE;
 3. **Shortest Path (BFS)**: Find the minimum hops between two suspicious accounts to assess exposure distance.
 4. **Cycle Detection**: Flag circular payment flows — classic layering / money-laundering indicator.
 5. **Centrality (Betweenness)**: Identify bridge entities that sit on many shortest paths — potential chokepoints for controls.""",
-        kpis="""| KPI | Target | Measurement |
+        kpis_and_risk="""| KPI | Target | Measurement |
 |:----|:------|:------------|
 | False Positive Rate | < 5% | SAR filing rate vs confirmations |
 | Threat Detection Time | < 2 min | Event → alert latency |
@@ -162,21 +170,21 @@ def _llm_solve(problem: str, domain: str = "") -> SentinelSolution:
     return _parse_llm_output(raw, problem, domain)
 
 
-# ---- Output parser — enforces 4-section structure ----------------------------
-_SECTION_RX = re.compile(
-    r"(?:^|\n)#{1,3}\s*(?:1\.?\s*)?(?:PROBLEM|CURRENT STATE|DECOMPOSITION|FAILURE ANALYSIS)",
-    re.IGNORECASE,
-)
+# ---- Output parser — enforces 8-section structure ----------------------------
 _SECTION_NAMES = [
     "problem_decomposition",
     "knowledge_graph_schema",
-    "algorithms_and_methodology",
-    "kpis_measurement_compliance",
+    "graph_algorithm_selection",
+    "gen_ai_integration",
+    "architecture_diagram",
+    "implementation_roadmap",
+    "success_metrics_and_risk",
+    "risks",
 ]
 
 
 def _parse_llm_output(raw: str, problem: str, domain: str) -> SentinelSolution:
-    """Split the LLM output into the 4 canonical sections."""
+    """Split the LLM output into the 8 canonical sections."""
     # Find numbered/markdown section headers and split
     lines = raw.split("\n")
     sections: list[list[str]] = [[]]
@@ -188,19 +196,19 @@ def _parse_llm_output(raw: str, problem: str, domain: str) -> SentinelSolution:
             sections.append([])
         sections[current].append(line)
 
-    # Pad to exactly 4 sections
-    while len(sections) < 4:
+    # Pad to exactly 8 sections
+    while len(sections) < 8:
         sections.append([])
-    # If too many (e.g. extra notes), merge tail into section 4
-    if len(sections) > 4:
-        for i in range(4, len(sections)):
-            sections[3].extend(sections[i])
+    # If too many, merge tail into section 8
+    if len(sections) > 8:
+        for i in range(8, len(sections)):
+            sections[7].extend(sections[i])
 
-    body = ["\n".join(s) for s in sections[0:4]]
+    body = ["\n".join(s) for s in sections[0:8]]
 
     # If no sections found, use the whole output as decomposition
     if current == 0:
-        body = [raw, "", "", ""]
+        body = [raw, "", "", "", "", "", "", ""]
 
     return SentinelSolution(
         domain=domain or _infer_domain(problem),
@@ -208,7 +216,10 @@ def _parse_llm_output(raw: str, problem: str, domain: str) -> SentinelSolution:
         decomposition=body[0].strip() or "See raw output.",
         graph_schema=body[1].strip() or "No schema found in output.",
         algorithms=body[2].strip() or "No algorithms specified.",
-        kpis=body[3].strip() or "No KPIs provided.",
+        gen_ai_integration=body[3].strip() if len(body) > 3 else "",
+        architecture=body[4].strip() if len(body) > 4 else "",
+        roadmap=body[5].strip() if len(body) > 5 else "",
+        kpis_and_risk=(body[6].strip() if len(body) > 6 else "") + "\n\n" + (body[7].strip() if len(body) > 7 else ""),
         raw=raw,
     )
 

@@ -37,8 +37,11 @@ class SolutionResponse(BaseModel):
     problem: str
     problem_decomposition: str
     knowledge_graph_schema: str
-    algorithms_and_methodology: str
-    kpis_measurement_compliance: str
+    graph_algorithm_selection: str
+    gen_ai_integration: str = ""
+    architecture_diagram: str = ""
+    implementation_roadmap: str = ""
+    success_metrics_and_risk: str = ""
 
 
 class HealthResponse(BaseModel):

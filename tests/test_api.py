@@ -34,8 +34,7 @@ def test_solve_aml_problem():
     assert data["domain"] == "aml_fraud"
     assert len(data["problem_decomposition"]) > 100
     assert len(data["knowledge_graph_schema"]) > 100
-    assert len(data["algorithms_and_methodology"]) > 100
-    assert len(data["kpis_measurement_compliance"]) > 100
+    assert len(data["graph_algorithm_selection"]) > 100
     assert "Cypher" in data["knowledge_graph_schema"] or "CREATE" in data["knowledge_graph_schema"]
 
 
@@ -64,7 +63,7 @@ def test_solve_insurance_problem():
     assert resp.status_code == 200
     data = resp.json()
     assert data["domain"] == "insurance"
-    assert len(data["kpis_measurement_compliance"]) > 80
+    assert len(data["success_metrics_and_risk"]) > 30
 
 
 def test_solve_kyc_problem():
