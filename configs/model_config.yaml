@@ -1,0 +1,52 @@
+# FinGraph Sentinel — Model & Graph Configuration
+
+agent:
+  name: "FinGraph Sentinel"
+  version: "1.0.0"
+  default_domain: "general_bfsi"
+  llm:
+    provider: "${FS_LLM_PROVIDER:-}"  # ollama, openai, or empty for deterministic
+    model: "${FS_LLM_MODEL:-llama3.2}"
+    temperature: 0.2
+    max_tokens: 4096
+    fallback: deterministic  # when LLM unavailable, use rule-based solver
+
+graph:
+  database: neo4j
+  version: "5.x"
+  uri: "${NEO4J_URI:-bolt://localhost:7687}"
+  user: "${NEO4J_USER:-neo4j}"
+  password: "${NEO4J_PASSWORD:-fingraph-demo}"
+  plugins: [apoc, graph-data-science]
+  gds:
+    projection_name: aml_fraud_graph
+    embedding_dimension: 256
+
+domains:
+  - aml_fraud
+  - credit_risk
+  - insurance
+  - kyc_compliance
+  - general_bfsi
+
+algorithms:
+  centrality: [PageRank, Betweenness, Closeness, Eigenvector]
+  community: [Louvain, Label Propagation, WCC]
+  pathfinding: [Shortest Path, Dijkstra, BFS]
+  pattern: [Cycle Detection, Triangle Count]
+  gnn: [GraphSAGE, GAT, RGCN, FastRP, Node2Vec]
+
+streaming:
+  platform: kafka
+  topic_prefix: "fingraph"
+  consumer_group: "fingraph-sentinel"
+  batch_interval_seconds: 300  # 5-minute window for GNN re-rank
+
+compliance:
+  frameworks:
+    - GDPR
+    - 6AMLD
+    - FATF
+    - Basel III/IV
+    - Solvency II
+    - PSD2

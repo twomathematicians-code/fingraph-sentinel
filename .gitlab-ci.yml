@@ -1,0 +1,54 @@
+stages:
+  - lint
+  - test
+  - graph-test
+  - build
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+lint:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install ruff
+  script:
+    - ruff check src/ tests/
+
+test:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install poetry
+    - poetry install --with dev
+  script:
+    - poetry run pytest tests/ -v --tb=short --ignore=tests/test_graph.py
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+
+graph-test:
+  stage: graph-test
+  image: python:3.11-slim
+  services:
+    - neo4j:5-community
+  variables:
+    NEO4J_AUTH: "neo4j/fingraph-demo"
+    NEO4J_URI: "bolt://neo4j:7687"
+  before_script:
+    - apt-get update && apt-get install -y curl
+    - pip install poetry && poetry install --with dev
+  script:
+    - poetry run pytest tests/test_graph.py -v --tb=short
+  allow_failure: true
+
+build:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  only:
+    - main
