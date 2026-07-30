@@ -2,8 +2,7 @@
 
 import pytest
 
-from src.graph.neo4j_client import get_driver, health, run_cypher
-
+from src.graph.neo4j_client import health, run_cypher
 
 pytestmark = pytest.mark.skip(reason="Neo4j not available in this environment")
 
