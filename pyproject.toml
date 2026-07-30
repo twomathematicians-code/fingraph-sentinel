@@ -1,4 +1,5 @@
 [tool.poetry]
+packages = [{include = "src"}]
 name = "fingraph-sentinel"
 version = "1.0.0"
 description = "FinGraph Sentinel — GenAI Graph Engineering Agent for BFSI: Neo4j, Graph RAG, GNNs, AML, credit risk, insurance claims, KYC compliance."
