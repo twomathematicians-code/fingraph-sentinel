@@ -15,26 +15,26 @@
 
 ## 🧬 Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       Docker Compose                             │
-│                                                                   │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
-│  │  FastAPI      │    │  Neo4j:5     │    │  Ollama       │       │
-│  │  Agent :8000  │───▶│  Graph :7687 │    │  LLM  :11434  │       │
-│  │               │    │              │    │  (optional)    │       │
-│  └──────┬────────┘    └──────┬───────┘    └──────┬────────┘       │
-│         │                    │                    │                │
-│  ┌──────┴────────────────────┴────────────────────┴──────────┐   │
-│  │                  graph-net (bridge)                         │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Docker Compose"
+        API[FastAPI Agent :8000]
+        NEO[Neo4j:5 :7687]
+        OLL[Ollama LLM :11434]
+    end
 
-Query flow:
-  BFSI Problem ──▶ Agent analyzes ──▶ LLM reasons ──▶ 4-section solution
-       │                    │                   │
-       ▼                    ▼                   ▼
-  Deterministic        Graph schema         Neo4j Cypher
+    USER[BFSI Problem] --> API
+    API --> DET[Deterministic Solver]
+    API --> LLM[LLM Reasoning]
+    DET --> KB[Knowledge Base<br/>4 BFSI Playbooks]
+    LLM --> PROMPT[System Prompt<br/>8-Section Spec]
+    API --> NEO
+    NEO --> GDS[GDS Plugin<br/>GraphSAGE · PageRank]
+    API --> OUT[8-Section Solution<br/>Schema · Algorithms · KPIs · Compliance]
+
+    style API fill:#2563eb,color:#fff
+    style NEO fill:#4581C3,color:#fff
+    style OUT fill:#059669,color:#fff
   fallback (no LLM)    (Cypher DDL)         invocations
 ```
 
