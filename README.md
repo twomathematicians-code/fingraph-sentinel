@@ -196,3 +196,4 @@ poetry run pytest tests/ -v --cov=src --cov-report=term-missing
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).
+# Community Update
